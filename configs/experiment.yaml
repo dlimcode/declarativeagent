@@ -1,0 +1,39 @@
+# Experiment configuration: 3x2 design
+# 3 agents (baseline, declarative, imperative) x 2 retrieval (golden_retrieval, bm25)
+
+domain: banking_knowledge
+user_llm: gpt-4o-mini
+agent_llm: openrouter/z-ai/glm-4.7-flash
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 3
+max_concurrency: 3
+seed: 300
+
+conditions:
+  baseline_golden:
+    agent: llm_agent
+    retrieval_config: golden_retrieval
+  baseline_bm25:
+    agent: llm_agent
+    retrieval_config: bm25
+  declarative_golden:
+    agent: declarative_agent
+    retrieval_config: golden_retrieval
+  declarative_bm25:
+    agent: declarative_agent
+    retrieval_config: bm25
+  imperative_golden:
+    agent: imperative_agent
+    retrieval_config: golden_retrieval
+  imperative_bm25:
+    agent: imperative_agent
+    retrieval_config: bm25
+
+# Pilot subset
+pilot_task_ids:
+  - task_001
+  - task_002
+  - task_003
+  - task_050
+  - task_070
