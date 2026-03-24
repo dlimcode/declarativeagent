@@ -1,9 +1,15 @@
-"""Imperative agent: 8-phase state machine controlling workflow.
+"""Imperative agent: state machine controlling workflow.
 
 Python code determines which phase the conversation is in, restricts
 tools to those relevant for the phase, and constructs phase-specific
 prompts. The LLM handles NLU, argument generation, and NLG within
 each phase.
+
+v2: Added TRIAGE phase after GREETING. The state machine routes based
+on the LLM's first action — identification tools lead to the account
+operations path, KB search or text responses lead to the advisory path.
+This fixes the over-procedural failure mode where forced identification
+derailed advisory/informational tasks.
 """
 
 from typing import List, Optional
@@ -23,6 +29,13 @@ from tau2.utils.llm_utils import generate
 
 from agents.state import AgentState
 
+# Tools that signal the LLM chose the identification path
+IDENTIFICATION_TOOLS = {
+    "get_user_information_by_id",
+    "get_user_information_by_name",
+    "get_user_information_by_email",
+}
+
 # Phase definitions: goal, allowed tools, expected output type
 PHASES = {
     "GREETING": {
@@ -33,17 +46,24 @@ PHASES = {
         "allowed_tools": [],
         "expect": "text",
     },
-    "IDENTIFICATION": {
+    "TRIAGE": {
         "goal": (
-            "Identify the customer. Ask for their user ID, name, or email, "
-            "then look them up."
+            "Based on the customer's request, take the appropriate next step.\n"
+            "- If they need account operations (changes, disputes, transactions, "
+            "closures, etc.), identify them first by asking for their user ID, "
+            "name, or email, then look them up.\n"
+            "- If they need information, recommendations, or general guidance "
+            "(e.g., 'which card is best?', 'what are your rates?'), provide it "
+            "directly or search the KB. Do NOT ask for identification."
         ),
         "allowed_tools": [
             "get_user_information_by_id",
             "get_user_information_by_name",
             "get_user_information_by_email",
+            "KB_search",
+            "give_discoverable_user_tool",
         ],
-        "expect": "tool_call",
+        "expect": "either",
     },
     "VERIFICATION": {
         "goal": (
@@ -76,7 +96,6 @@ PHASES = {
             "Use call_discoverable_agent_tool with the correct arguments "
             "as a JSON string. You may also use standard tools if needed."
         ),
-        # unlock included for golden_retrieval where KB_SEARCH is skipped
         # All standard + discoverable tools allowed in EXECUTION
         "allowed_tools": [
             "unlock_discoverable_agent_tool",
@@ -134,6 +153,9 @@ class ImperativeAgent(LLMConfigMixin, HalfDuplexAgent[AgentState]):
     restricts tools to those relevant for the phase, and constructs
     phase-specific prompts. The LLM handles NLU, argument generation,
     and NLG within each phase.
+
+    v2: TRIAGE phase after GREETING routes to identification (account ops)
+    or directly to advisory response / KB search based on the LLM's action.
     """
 
     def __init__(
@@ -198,25 +220,37 @@ class ImperativeAgent(LLMConfigMixin, HalfDuplexAgent[AgentState]):
     ) -> str:
         """Determine current phase based on conversation state.
 
-        Forward-only flow with skip logic for golden_retrieval
-        (no KB_search tool available). Handles follow-up requests
-        by cycling back from COMPLETE to IDENTIFICATION.
+        After GREETING, enters TRIAGE which branches:
+        - Identification tool called → VERIFICATION (account ops path)
+        - KB_search called → TOOL_DISCOVERY (needs discoverable tool)
+        - Text response → CONFIRMATION (advisory path — info given directly)
+
+        Subsequent phases are forward-only with skip logic for
+        golden_retrieval (no KB_search tool). Follow-up requests
+        cycle back to TRIAGE.
         """
         current = state.phase
 
         if current == "GREETING":
-            # Stay in GREETING on the first user message so the agent
-            # can acknowledge the request before moving on. Transition
-            # to IDENTIFICATION only after the agent has responded
-            # (i.e., the last message in history is an AssistantMessage).
+            # Stay in GREETING until the agent has responded with text
             if self._last_assistant_was_text(state):
-                return "IDENTIFICATION"
+                return "TRIAGE"
             return "GREETING"
 
-        if current == "IDENTIFICATION":
-            if self._last_was_successful_tool_result(state):
-                return "VERIFICATION"
-            return "IDENTIFICATION"
+        if current == "TRIAGE":
+            # Route based on what the LLM chose to do
+            last_tool = self._last_tool_name(state)
+            if last_tool and last_tool in IDENTIFICATION_TOOLS:
+                if self._last_was_successful_tool_result(state):
+                    return "VERIFICATION"
+                return "TRIAGE"
+            if last_tool == "KB_search":
+                if self._last_was_successful_tool_result(state):
+                    return "TOOL_DISCOVERY"
+                return "TRIAGE"
+            if self._last_assistant_was_text(state):
+                return "CONFIRMATION"
+            return "TRIAGE"
 
         if current == "VERIFICATION":
             if self._last_was_successful_tool_result(state):
@@ -245,15 +279,13 @@ class ImperativeAgent(LLMConfigMixin, HalfDuplexAgent[AgentState]):
             return "EXECUTION"
 
         if current == "CONFIRMATION":
-            # If the user responds with a new request, cycle back
             if isinstance(message, UserMessage):
-                return "IDENTIFICATION"
+                return "TRIAGE"
             return "COMPLETE"
 
         if current == "COMPLETE":
-            # Handle follow-up requests after task completion
             if isinstance(message, UserMessage):
-                return "IDENTIFICATION"
+                return "TRIAGE"
             return "COMPLETE"
 
         return current
@@ -277,6 +309,19 @@ class ImperativeAgent(LLMConfigMixin, HalfDuplexAgent[AgentState]):
             if isinstance(msg, AssistantMessage):
                 return msg.has_text_content() and not msg.is_tool_call()
         return False
+
+    def _last_tool_name(self, state: AgentState) -> Optional[str]:
+        """Get the tool name from the last assistant tool call, if any."""
+        for msg in reversed(state.messages):
+            if isinstance(msg, AssistantMessage) and msg.is_tool_call():
+                tool_calls = msg.tool_calls or []
+                if tool_calls:
+                    return tool_calls[0].name
+                return None
+            if isinstance(msg, (ToolMessage, MultiToolMessage)):
+                continue
+            break
+        return None
 
     def generate_next_message(
         self, message: ValidAgentInputMessage, state: AgentState
@@ -308,8 +353,9 @@ class ImperativeAgent(LLMConfigMixin, HalfDuplexAgent[AgentState]):
         messages = [phase_system] + state.messages
 
         # Phases expecting text get no tools so the LLM produces text.
-        # Phases expecting tool calls get only their allowed tools (never
-        # fall back to all tools — empty list means no tools available).
+        # Phases expecting "either" get tools but the LLM may respond
+        # with text instead (tool_choice="auto" allows this).
+        # Phases expecting tool calls get only their allowed tools.
         expects_text = PHASES[state.phase]["expect"] == "text"
         tools_arg = None if expects_text else phase_tools
 
