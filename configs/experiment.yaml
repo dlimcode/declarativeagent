@@ -3,11 +3,11 @@
 
 domain: banking_knowledge
 user_llm: gpt-4o-mini
-agent_llm: openrouter/z-ai/glm-4.7-flash
+agent_llm: dashscope/qwen3.5-flash
 agent_llm_args:
   max_tokens: 4096
 num_trials: 3
-max_concurrency: 3
+max_concurrency: 5
 seed: 300
 
 conditions:

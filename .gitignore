@@ -53,6 +53,7 @@ supabase/.temp
 CLAUDE.md
 
 # documentation
+docs/
 ai-assisted/
 handoff-*.md
 research/
@@ -62,6 +63,9 @@ tau2-bench/
 
 # experiment results
 results/
+
+# experiment logs
+logs/
 
 # python
 __pycache__/

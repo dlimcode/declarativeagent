@@ -38,7 +38,7 @@ Provide domain knowledge about banking operation categories and their requiremen
 ### Profile Updates
 - Email changes, contact information updates
 - Requires: verified customer
-- Email updates use `update_user_email` (standard tool, no KB search needed)
+- Email updates use `change_user_email` (standard tool, no KB search needed)
 
 ## Common Policy Patterns
 - Always verify before modifying: never change account details without verification

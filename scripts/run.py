@@ -34,6 +34,19 @@ from agents.register import register_all
 
 register_all()
 
+# Register pricing for models not in LiteLLM's registry
+import litellm
+
+litellm.model_cost["dashscope/qwen3.5-flash"] = {
+    "input_cost_per_token": 0.0000001,     # $0.10/M (Alibaba Cloud intl pricing)
+    "output_cost_per_token": 0.0000004,    # $0.40/M
+    "max_tokens": 65536,
+    "max_input_tokens": 991000,
+    "litellm_provider": "dashscope",
+    "mode": "chat",
+    "supports_function_calling": True,
+}
+
 # Run the tau2 CLI
 from tau2.cli import main
 
