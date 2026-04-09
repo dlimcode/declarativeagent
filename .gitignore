@@ -1,11 +1,33 @@
-.env
-.env.*
+# misc
+.DS_Store
 *.pem
-*.key
+
+# env files
+.env*
+
+# claude
+.mcp.json
+.claude/
+CLAUDE.md
+
+# documentation
+docs/
+ai-assisted/
+handoff-*.md
+handoff/
+report/
+research/
+
+# tau2-bench (cloned dependency)
+tau2-bench/
+
+# experiment results
+results/
+
+# experiment logs
+logs/
+
+# python
 __pycache__/
 *.pyc
-.venv/
-venv/
-node_modules/
-.DS_Store
-.claude/settings.local.json
+*.pyo
