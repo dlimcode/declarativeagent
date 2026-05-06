@@ -47,7 +47,7 @@ from tau2.data_model.message import (
     UserMessage,
 )
 from tau2.environment.tool import Tool
-from tau2.utils.llm_utils import generate
+from agents.cached_generate import generate_cached as generate
 
 from agents.state import AgentState
 
@@ -415,11 +415,30 @@ class ImperativeAgentV2(LLMConfigMixin, HalfDuplexAgent[AgentState]):
         messages = [phase_system] + state.messages
 
         expects_text = PHASES_V2[state.phase]["expect"] == "text"
-        tools_arg = None if expects_text else phase_tools
+
+        # Anthropic requires tools= whenever the history contains tool calls.
+        # For text-only phases, pass all tools but force tool_choice="none" so
+        # the model cannot call them. Falls back to tools=None for providers
+        # that don't need it (no tool messages in history yet).
+        history_has_tool_calls = any(
+            (isinstance(m, AssistantMessage) and m.is_tool_call())
+            or isinstance(m, (ToolMessage, MultiToolMessage))
+            for m in state.messages
+        )
+        if expects_text and history_has_tool_calls:
+            tools_arg = list(self.all_tools.values())
+            tool_choice = "none"
+        elif expects_text:
+            tools_arg = None
+            tool_choice = None
+        else:
+            tools_arg = phase_tools
+            tool_choice = None
 
         assistant_message = generate(
             model=self.llm,
             tools=tools_arg,
+            tool_choice=tool_choice,
             messages=messages,
             call_name="agent_response",
             **self.llm_args,

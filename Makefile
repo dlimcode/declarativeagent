@@ -4,7 +4,7 @@
 PYTHON = cd tau2-bench && uv run python
 RUN = $(PYTHON) ../scripts/run.py
 
-.PHONY: setup smoke-test pilot experiment analyze clean
+.PHONY: setup smoke-test pilot pilot-v2 pilot-embedding experiment experiment-v2 experiment-embedding analyze clean
 
 # --- Setup ---
 
@@ -54,10 +54,22 @@ smoke-test: smoke-test-baseline smoke-test-declarative smoke-test-imperative
 pilot:
 	$(PYTHON) ../scripts/run_pilot.py
 
+pilot-v2:
+	$(PYTHON) ../scripts/run_experiment.py --config ../configs/pilot-v2.yaml
+
+pilot-embedding:
+	$(PYTHON) ../scripts/run_experiment.py --config ../configs/pilot-embedding.yaml
+
 # --- Full Experiment ---
 
 experiment:
 	$(PYTHON) ../scripts/run_experiment.py
+
+experiment-v2:
+	$(PYTHON) ../scripts/run_experiment.py --config ../configs/experiment-v2.yaml
+
+experiment-embedding:
+	$(PYTHON) ../scripts/run_experiment.py --config ../configs/experiment-embedding.yaml
 
 # --- Analysis ---
 

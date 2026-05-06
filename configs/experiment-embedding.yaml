@@ -1,0 +1,25 @@
+# Full embedding experiment: 97 tasks x 4 conditions x 1 trial = 388 simulations
+# Compares DeepSeek embedding retrieval against golden baseline for both agent types.
+
+domain: banking_knowledge
+user_llm: deepseek/deepseek-v4-pro
+agent_llm: deepseek/deepseek-v4-pro
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 5
+seed: 300
+
+conditions:
+  declarative_v2_golden:
+    agent: declarative_agent_v2
+    retrieval_config: golden_retrieval
+  declarative_v2_embedding:
+    agent: declarative_agent_v2
+    retrieval_config: deepseek_embeddings
+  imperative_v2_golden:
+    agent: imperative_agent_v2
+    retrieval_config: golden_retrieval
+  imperative_v2_embedding:
+    agent: imperative_agent_v2
+    retrieval_config: deepseek_embeddings

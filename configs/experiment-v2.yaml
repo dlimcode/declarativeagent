@@ -1,0 +1,35 @@
+# Experiment v2: declarative_v2 and imperative_v2 agents with Claude Haiku
+# 4 conditions x 97 tasks x 3 trials = 1,164 simulations (full run)
+# Agent LLM: claude-haiku-4-5-20251001 (Anthropic)
+# User LLM:  claude-haiku-4-5-20251001 (Anthropic, since no OpenAI key available)
+
+domain: banking_knowledge
+user_llm: deepseek/deepseek-v4-pro
+agent_llm: deepseek/deepseek-v4-pro
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 5
+seed: 300
+
+conditions:
+  declarative_v2_golden:
+    agent: declarative_agent_v2
+    retrieval_config: golden_retrieval
+  declarative_v2_bm25:
+    agent: declarative_agent_v2
+    retrieval_config: bm25
+  imperative_v2_golden:
+    agent: imperative_agent_v2
+    retrieval_config: golden_retrieval
+  imperative_v2_bm25:
+    agent: imperative_agent_v2
+    retrieval_config: bm25
+
+# 5-task pilot for smoke-testing
+pilot_task_ids:
+  - task_001
+  - task_002
+  - task_003
+  - task_050
+  - task_070

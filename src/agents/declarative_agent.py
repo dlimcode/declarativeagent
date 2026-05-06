@@ -19,7 +19,7 @@ from tau2.data_model.message import (
     UserMessage,
 )
 from tau2.environment.tool import Tool
-from tau2.utils.llm_utils import generate
+from agents.cached_generate import generate_cached as generate
 
 from agents.state import AgentState
 
