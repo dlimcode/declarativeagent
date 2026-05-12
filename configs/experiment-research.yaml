@@ -23,22 +23,22 @@ max_concurrency: 5
 seed: 300
 
 conditions:
-  baseline_golden:
+  research_baseline_golden:
     agent: llm_agent
     retrieval_config: golden_retrieval
-  baseline_minilm:
+  research_baseline_minilm:
     agent: llm_agent
     retrieval_config: deepseek_embeddings
-  declarative_v2_golden:
+  research_declarative_v2_golden:
     agent: declarative_agent_v2
     retrieval_config: golden_retrieval
-  declarative_v2_minilm:
+  research_declarative_v2_minilm:
     agent: declarative_agent_v2
     retrieval_config: deepseek_embeddings
-  imperative_v3_golden:
+  research_imperative_v3_golden:
     agent: imperative_agent_v3
     retrieval_config: golden_retrieval
-  imperative_v3_minilm:
+  research_imperative_v3_minilm:
     agent: imperative_agent_v3
     retrieval_config: deepseek_embeddings
 
