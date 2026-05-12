@@ -1,0 +1,52 @@
+# Paper-extension experiment: Qwen3.5-Flash on prof's v2/v3 agent stack
+# with MiniLM-L6-v2 embedding retrieval.
+#
+# Design: 3 agents (baseline, declarative_v2, imperative_v3) x 2 retrieval
+# (golden, MiniLM embeddings) x 97 tasks x 1 trial = 582 simulations.
+#
+# Hypothesis: skill files act as scaffolding that lifts smaller/cheaper
+# models toward parity with larger ones. Comparison reference is prof's
+# DeepSeek-v4-pro run in reports/experiment-embedding-results.md.
+#
+# Trials=1 matches prof's DeepSeek setup for direct condition-vs-condition
+# comparison; do not change without coordinating with prof.
+# Retrieval variant `deepseek_embeddings` is a naming artifact — the actual
+# embedder is all-MiniLM-L6-v2 via the `local` embedder registered in run.py.
+
+domain: banking_knowledge
+user_llm: gpt-4o-mini
+agent_llm: dashscope/qwen3.5-flash
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 5
+seed: 300
+
+conditions:
+  baseline_golden:
+    agent: llm_agent
+    retrieval_config: golden_retrieval
+  baseline_minilm:
+    agent: llm_agent
+    retrieval_config: deepseek_embeddings
+  declarative_v2_golden:
+    agent: declarative_agent_v2
+    retrieval_config: golden_retrieval
+  declarative_v2_minilm:
+    agent: declarative_agent_v2
+    retrieval_config: deepseek_embeddings
+  imperative_v3_golden:
+    agent: imperative_agent_v3
+    retrieval_config: golden_retrieval
+  imperative_v3_minilm:
+    agent: imperative_agent_v3
+    retrieval_config: deepseek_embeddings
+
+# 5-task pilot subset (step 6) — same IDs as the original experiment.yaml
+# for cross-experiment comparability.
+pilot_task_ids:
+  - task_001
+  - task_002
+  - task_003
+  - task_050
+  - task_070

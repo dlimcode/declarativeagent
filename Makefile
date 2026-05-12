@@ -4,7 +4,7 @@
 PYTHON = cd tau2-bench && uv run python
 RUN = $(PYTHON) ../scripts/run.py
 
-.PHONY: setup smoke-test pilot pilot-v2 pilot-v3 pilot-embedding experiment experiment-v2 experiment-v3 experiment-embedding smoke-test-imperative-v3 analyze clean
+.PHONY: setup smoke-test pilot pilot-v2 pilot-v3 pilot-embedding pilot-research experiment experiment-v2 experiment-v3 experiment-embedding experiment-research smoke-test-imperative-v3 analyze clean
 
 # --- Setup ---
 
@@ -14,7 +14,8 @@ setup:
 		git clone https://github.com/sierra-research/tau2-bench.git tau2-bench; \
 	fi
 	cd tau2-bench && git checkout v1.0.0
-	cd tau2-bench && uv sync --extra knowledge --extra voice
+	./scripts/patch-tau2bench.sh
+	cd tau2-bench && uv sync --extra knowledge --extra voice --extra embedding
 	@echo ""
 	@echo "=== Setup complete ==="
 	@echo "Create tau2-bench/.env with DASHSCOPE_API_KEY and OPENAI_API_KEY"
@@ -71,6 +72,9 @@ pilot-v3:
 pilot-embedding:
 	$(PYTHON) ../scripts/run_experiment.py --config ../configs/pilot-embedding.yaml
 
+pilot-research:
+	$(PYTHON) ../scripts/run_experiment.py --config ../configs/pilot-research.yaml
+
 # --- Full Experiment ---
 
 experiment:
@@ -84,6 +88,9 @@ experiment-v3:
 
 experiment-embedding:
 	$(PYTHON) ../scripts/run_experiment.py --config ../configs/experiment-embedding.yaml
+
+experiment-research:
+	$(PYTHON) ../scripts/run_experiment.py --config ../configs/experiment-research.yaml
 
 # --- Analysis ---
 

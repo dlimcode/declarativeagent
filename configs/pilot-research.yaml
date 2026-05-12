@@ -1,0 +1,39 @@
+# Paper-extension pilot: 5 tasks x 6 conditions x 1 trial = 30 simulations.
+# Validates the full 6-cell stack on Qwen + MiniLM before committing to the
+# 582-sim full run (configs/experiment-research.yaml).
+
+domain: banking_knowledge
+user_llm: gpt-4o-mini
+agent_llm: dashscope/qwen3.5-flash
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 5
+seed: 300
+
+task_ids:
+  - task_001
+  - task_002
+  - task_003
+  - task_050
+  - task_070
+
+conditions:
+  baseline_golden:
+    agent: llm_agent
+    retrieval_config: golden_retrieval
+  baseline_minilm:
+    agent: llm_agent
+    retrieval_config: deepseek_embeddings
+  declarative_v2_golden:
+    agent: declarative_agent_v2
+    retrieval_config: golden_retrieval
+  declarative_v2_minilm:
+    agent: declarative_agent_v2
+    retrieval_config: deepseek_embeddings
+  imperative_v3_golden:
+    agent: imperative_agent_v3
+    retrieval_config: golden_retrieval
+  imperative_v3_minilm:
+    agent: imperative_agent_v3
+    retrieval_config: deepseek_embeddings
