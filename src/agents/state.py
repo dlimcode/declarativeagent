@@ -32,3 +32,8 @@ class AgentState(BaseModel):
 
     # v3: response-type violation counter (Strategy 6)
     expect_violation_count: int = 0
+
+    # v3: count of synthesized fallbacks when the LLM returned a structurally
+    # invalid AssistantMessage (no content AND no tool_calls). Tracked separately
+    # from expect_violation_count, which counts wrong-shape-but-valid messages.
+    empty_message_fallback_count: int = 0

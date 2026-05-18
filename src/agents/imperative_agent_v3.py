@@ -21,6 +21,8 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional
 
+from loguru import logger
+
 from tau2.agent.base.llm_config import LLMConfigMixin
 from tau2.agent.base_agent import HalfDuplexAgent, ValidAgentInputMessage
 from tau2.data_model.message import (
@@ -514,24 +516,71 @@ class ImperativeAgentV3(LLMConfigMixin, HalfDuplexAgent[AgentState]):
         """Generate a response; retry up to MAX_EXPECT_RETRIES if type mismatches expect."""
         expect = PHASES_V3[phase]["expect"]
 
+        response = None
         for attempt in range(MAX_EXPECT_RETRIES + 1):
-            response = generate(
-                model=self.llm,
-                tools=tools_arg,
-                tool_choice=tool_choice,
-                messages=messages,
-                call_name=f"agent_{phase.lower()}",
-                **self.llm_args,
-            )
+            try:
+                response = generate(
+                    model=self.llm,
+                    tools=tools_arg,
+                    tool_choice=tool_choice,
+                    messages=messages,
+                    call_name=f"agent_{phase.lower()}",
+                    **self.llm_args,
+                )
+            except Exception as e:
+                # DashScope rejects tool_choice="required" for thinking models
+                # (e.g. Qwen3.5-Flash) with a 400 BadRequest; without this guard
+                # the exception escapes generate_next_message → step() → the
+                # orchestrator's outer try/finally terminates the sim as an
+                # infrastructure_error. Treat any LLM error as a violation, drop
+                # the offending tool_choice if that's the likely cause, and
+                # retry. After retries exhaust, synthesize a fallback so the
+                # orchestrator can continue.
+                state.expect_violation_count += 1
+                logger.warning(
+                    f"_enforce_expect: generate() raised on attempt {attempt} "
+                    f"(phase={phase}, tool_choice={tool_choice}): {type(e).__name__}: {e}"
+                )
+                if attempt < MAX_EXPECT_RETRIES:
+                    if tool_choice == "required":
+                        tool_choice = None
+                    continue
+                state.empty_message_fallback_count += 1
+                return AssistantMessage(
+                    role="assistant",
+                    content=(
+                        "I'm sorry, I'm having trouble processing that right now. "
+                        "Could you please rephrase or repeat your request?"
+                    ),
+                )
 
             got_tool = response.is_tool_call()
             got_text = response.has_text_content() and not got_tool
+            # Qwen-LiteLLM occasionally returns an AssistantMessage with empty
+            # content AND no tool_calls. Treat that as a violation regardless of
+            # which expect mode we're in, since the orchestrator's validate()
+            # rejects it (raises ValueError → infrastructure_error termination).
+            is_empty = not response.has_content() and not got_tool
 
-            if expect == "either" or (expect == "tool_call" and got_tool) or (expect == "text" and got_text):
+            type_ok = not is_empty and (
+                expect == "either"
+                or (expect == "tool_call" and got_tool)
+                or (expect == "text" and got_text)
+            )
+            if type_ok:
                 return response
 
             state.expect_violation_count += 1
             if attempt >= MAX_EXPECT_RETRIES:
+                # Final fallback: synthesize a placeholder so the message is
+                # structurally valid for the orchestrator. The user simulator
+                # can decide whether to retry, rephrase, or end the conversation.
+                if is_empty:
+                    response.content = (
+                        "I'm sorry, I'm having trouble processing that right now. "
+                        "Could you please rephrase or repeat your request?"
+                    )
+                    state.empty_message_fallback_count += 1
                 return response  # best-effort fallback
 
             if expect == "tool_call" and not got_tool:

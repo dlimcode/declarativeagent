@@ -91,6 +91,16 @@ litellm.model_cost["dashscope/qwen3.5-flash"] = {
     "supports_function_calling": True,
 }
 
+litellm.model_cost["dashscope/qwen-plus"] = {
+    "input_cost_per_token": 0.00000026,    # $0.26/M (Alibaba Cloud intl pricing)
+    "output_cost_per_token": 0.00000078,   # $0.78/M
+    "max_tokens": 8192,
+    "max_input_tokens": 131072,
+    "litellm_provider": "dashscope",
+    "mode": "chat",
+    "supports_function_calling": True,
+}
+
 # Run the tau2 CLI
 from tau2.cli import main
 
