@@ -1,9 +1,8 @@
-# Declarative vs Imperative Agent Orchestration on tau3-bench
+# Declarative vs Imperative Agent Orchestration 
+@Application on tau-knowledge
 
 Comparing natural-language workflow guidance (skill files) vs programmatic workflow control (state machine) for LLM agents on the [tau3-bench](https://github.com/sierra-research/tau2-bench) banking_knowledge domain.
 
-**Course:** Gen AI with LLMs, SMU Singapore
-**Deadline:** April 11, 2026
 
 ## Research Question
 
