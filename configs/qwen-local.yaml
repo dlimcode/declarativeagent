@@ -1,0 +1,21 @@
+# Local Qwen3.5:9B (via Ollama) as agent LLM. User simulator stays
+# DeepSeek-Pro to keep the eval oracle consistent with existing rows in
+# the latex tables. Baseline + Declarative on golden retrieval only.
+
+domain: banking_knowledge
+user_llm: deepseek/deepseek-v4-pro
+agent_llm: ollama_chat/qwen3.5:9b
+agent_llm_args:
+  max_tokens: 4096
+  api_base: http://localhost:11434
+num_trials: 1
+max_concurrency: 1
+seed: 300
+
+conditions:
+  baseline_golden_qwen:
+    agent: baseline_agent
+    retrieval_config: golden_retrieval
+  declarative_v2_golden_qwen:
+    agent: declarative_agent_v2
+    retrieval_config: golden_retrieval

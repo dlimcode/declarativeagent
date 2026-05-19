@@ -1,0 +1,22 @@
+# Concurrency-1 sequential retry for Flash-Lite embedding. One LLM call in flight
+# at a time minimises throttling on the 4M input-TPM cap.
+
+domain: banking_knowledge
+user_llm: deepseek/deepseek-v4-pro
+agent_llm: gemini/gemini-3.1-flash-lite
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 1
+seed: 300
+
+conditions:
+  baseline_embedding_flashlite:
+    agent: baseline_agent
+    retrieval_config: deepseek_embeddings
+  declarative_v2_embedding_flashlite:
+    agent: declarative_agent_v2
+    retrieval_config: deepseek_embeddings
+  imperative_v2_embedding_flashlite:
+    agent: imperative_agent_v2
+    retrieval_config: deepseek_embeddings

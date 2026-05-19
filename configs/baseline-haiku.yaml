@@ -1,0 +1,18 @@
+# Model-scaling probe: baseline agent on claude-haiku-4-5, golden retrieval only.
+# Pairs with existing baseline_golden (deepseek-v4-pro, n=93, pass^1=0.462) and
+# declarative_v2_golden_haiku_backup (haiku, n=91, pass^1=0.451) to test whether
+# the declarative skill-file lift over baseline grows on weaker models.
+
+domain: banking_knowledge
+user_llm: anthropic/claude-haiku-4-5-20251001
+agent_llm: anthropic/claude-haiku-4-5-20251001
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 20
+seed: 300
+
+conditions:
+  baseline_golden_haiku:
+    agent: baseline_agent
+    retrieval_config: golden_retrieval

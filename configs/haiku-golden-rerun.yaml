@@ -1,0 +1,26 @@
+# Clean re-run of Haiku-4.5 golden retrieval for declarative_v2 and imperative_v2.
+# The previous backup dirs (declarative_v2_golden_haiku_backup,
+# imperative_v2_golden_haiku_backup) were contaminated: a 2026-05-05 evening
+# resume was issued with --agent-llm deepseek-v4-pro by mistake; tau2's
+# auto-resume kept the 5 morning sims (real Haiku) and ran 86-87 more with
+# DeepSeek-Pro under the haiku save name, leaving info.agent_info wrong.
+#
+# This config writes to *new* save names (no _backup suffix) so auto-resume
+# cannot reach into the contaminated dirs.
+
+domain: banking_knowledge
+user_llm: anthropic/claude-haiku-4-5-20251001
+agent_llm: anthropic/claude-haiku-4-5-20251001
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 20
+seed: 300
+
+conditions:
+  declarative_v2_golden_haiku:
+    agent: declarative_agent_v2
+    retrieval_config: golden_retrieval
+  imperative_v2_golden_haiku:
+    agent: imperative_agent_v2
+    retrieval_config: golden_retrieval

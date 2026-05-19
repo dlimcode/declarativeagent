@@ -1,0 +1,23 @@
+# Scaling probe: baseline, declarative_v2, imperative_v2 on gemini-3.1-flash-lite.
+# Paid tier; Gemini implicit context caching kicks in automatically for repeated
+# system-prompt prefixes (server-side, free).
+
+domain: banking_knowledge
+user_llm: deepseek/deepseek-v4-pro
+agent_llm: gemini/gemini-3.1-flash-lite
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 20
+seed: 300
+
+conditions:
+  baseline_golden_flashlite:
+    agent: baseline_agent
+    retrieval_config: golden_retrieval
+  declarative_v2_golden_flashlite:
+    agent: declarative_agent_v2
+    retrieval_config: golden_retrieval
+  imperative_v2_golden_flashlite:
+    agent: imperative_agent_v2
+    retrieval_config: golden_retrieval

@@ -1,0 +1,22 @@
+# Fill missing embedding cells on Claude-Haiku-4.5. Prompt caching active in
+# cached_generate (cache_control on system message — Anthropic native).
+
+domain: banking_knowledge
+user_llm: anthropic/claude-haiku-4-5-20251001
+agent_llm: anthropic/claude-haiku-4-5-20251001
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 20
+seed: 300
+
+conditions:
+  baseline_embedding_haiku:
+    agent: baseline_agent
+    retrieval_config: deepseek_embeddings
+  declarative_v2_embedding_haiku:
+    agent: declarative_agent_v2
+    retrieval_config: deepseek_embeddings
+  imperative_v2_embedding_haiku:
+    agent: imperative_agent_v2
+    retrieval_config: deepseek_embeddings
