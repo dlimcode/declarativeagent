@@ -81,6 +81,16 @@ litellm.model_cost["deepseek/deepseek-v4-pro"] = {
     "supports_function_calling": True,
 }
 
+litellm.model_cost["deepseek/deepseek-v4-flash"] = {
+    "input_cost_per_token": 0.00000007,     # $0.07/M (flash tier)
+    "output_cost_per_token": 0.0000003,     # $0.30/M
+    "max_tokens": 8192,
+    "max_input_tokens": 65536,
+    "litellm_provider": "deepseek",
+    "mode": "chat",
+    "supports_function_calling": True,
+}
+
 litellm.model_cost["dashscope/qwen3.5-flash"] = {
     "input_cost_per_token": 0.0000001,     # $0.10/M (Alibaba Cloud intl pricing)
     "output_cost_per_token": 0.0000004,    # $0.40/M

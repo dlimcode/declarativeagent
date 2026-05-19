@@ -7,10 +7,21 @@ available via --agent declarative_agent / --agent imperative_agent /
 
 from tau2.registry import registry
 
+from agents.baseline_agent import BaselineAgent
 from agents.declarative_agent import DeclarativeAgent
 from agents.imperative_agent import ImperativeAgent
 from agents.imperative_agent_v2 import ImperativeAgentV2
 from agents.imperative_agent_v3 import ImperativeAgentV3
+
+
+def create_baseline_agent(tools, domain_policy, **kwargs):
+    """Factory for BaselineAgent (tau2 LLMAgent + prompt caching, no skills)."""
+    return BaselineAgent(
+        tools=tools,
+        domain_policy=domain_policy,
+        llm=kwargs.get("llm"),
+        llm_args=kwargs.get("llm_args"),
+    )
 
 
 def create_declarative_agent(tools, domain_policy, **kwargs):
@@ -66,6 +77,10 @@ def create_imperative_agent_v3(tools, domain_policy, **kwargs):
 
 def register_all():
     """Register all custom agents with the tau2 registry."""
+    registry.register_agent_factory(
+        factory=create_baseline_agent,
+        name="baseline_agent",
+    )
     registry.register_agent_factory(
         factory=create_declarative_agent,
         name="declarative_agent",
