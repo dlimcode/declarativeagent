@@ -1,0 +1,16 @@
+# Imperative-V2 on deepseek-v4-flash, golden retrieval, full 97 tasks.
+# Batch mode + prompt caching (auto-enabled in cached_generate for deepseek).
+
+domain: banking_knowledge
+user_llm: deepseek/deepseek-v4-pro
+agent_llm: deepseek/deepseek-v4-flash
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 20
+seed: 300
+
+conditions:
+  imperative_v2_golden_flash:
+    agent: imperative_agent_v2
+    retrieval_config: golden_retrieval

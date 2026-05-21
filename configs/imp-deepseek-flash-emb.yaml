@@ -1,0 +1,17 @@
+# Imperative-V2 on deepseek-v4-flash, embedding retrieval, full 97 tasks.
+# Batch mode (concurrency 20); prompt caching is automatic in cached_generate for
+# any "deepseek"-named model (Anthropic-style cache_control block on system msg).
+
+domain: banking_knowledge
+user_llm: deepseek/deepseek-v4-pro
+agent_llm: deepseek/deepseek-v4-flash
+agent_llm_args:
+  max_tokens: 4096
+num_trials: 1
+max_concurrency: 20
+seed: 300
+
+conditions:
+  imperative_v2_embedding_flash:
+    agent: imperative_agent_v2
+    retrieval_config: deepseek_embeddings

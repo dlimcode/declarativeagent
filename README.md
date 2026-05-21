@@ -83,16 +83,90 @@ Our code plugs into tau3-bench via its registry system — **zero modifications 
 
 ## Reproducibility
 
-- **Random seed:** 300 (set in `configs/experiment.yaml` and `configs/generalizability.yaml`)
-- **Agent LLM:** `dashscope/qwen3.5-flash` with `max_tokens: 4096`
-- **User simulator:** `gpt-4o-mini`
-- **Trials:** 3 per task-condition pair (main experiment), 1 per pair (generalizability)
-- **Analysis:** `make analyze` runs the full extraction, statistical testing, and plotting pipeline
+### Headline numbers in the paper
 
-To run the generalizability check with GPT-4o-mini as agent:
+The paper reports results for three agents (Baseline, DeclarativeAgent, ImperativeAgent) on five language models (Qwen3.5-Flash, Claude Haiku-4.5, Gemini-3.1-Flash-Lite, DeepSeek-v4-Flash, DeepSeek-v4-Pro) under two retrieval regimes (golden and a local `all-MiniLM-L6-v2` embedding retriever). All conditions share:
+
+- **Domain:** `banking_knowledge` (97 tasks from $\tau$-Knowledge)
+- **Random seed:** 300
+- **Trials:** 1
+- **Agent `max_tokens`:** 4096
+- **User simulator:** `deepseek/deepseek-v4-pro` for all conditions *except* the Claude Haiku-4.5 conditions, which use `anthropic/claude-haiku-4-5-20251001` on both sides (matches the original benchmark pairing and avoids a cross-provider user channel for Anthropic-model rows)
+- **Embedding retriever:** local `sentence-transformers` `all-MiniLM-L6-v2`, served via the `deepseek_embeddings` retrieval variant registered in `scripts/run.py`
+
+### Configs that produced each table row
+
+| Paper cells | Config |
+|---|---|
+| DeepSeek-v4-Pro rows (golden & embedding) | `configs/experiment-v2.yaml` |
+| DeepSeek-v4-Flash *imperative* rows | `configs/imp-deepseek-flash-golden.yaml`, `configs/imp-deepseek-flash-emb.yaml` |
+| DeepSeek-v4-Flash baseline + declarative rows | produced earlier in the project; sim records preserved under `baseline_golden_flash`, `baseline_embedding_flash`, `declarative_v2_golden_flash`, `declarative_v2_embedding_flash`. To re-run, copy one of the `imp-deepseek-flash-*.yaml` configs and swap the `agent:` field |
+| Gemini-3.1-Flash-Lite rows | `configs/scaling-flash-lite.yaml`, `configs/embed-retry-flashlite-c1.yaml` (concurrency=1 top-up for the imperative-embedding cell) |
+| Claude Haiku-4.5 golden Baseline | `configs/baseline-haiku.yaml` |
+| Claude Haiku-4.5 golden Declarative + Imperative | `configs/haiku-golden-rerun.yaml` *(see note below)* |
+| Claude Haiku-4.5 embedding (all three agents) | `configs/embed-missing-haiku.yaml` |
+| Qwen3.5-Flash rows | `configs/experiment-research.yaml` |
+
+**Note on `haiku-golden-rerun.yaml`.** An earlier batch of Haiku-golden runs (saved to `*_haiku_backup` directories) was inadvertently resumed with `--agent-llm deepseek-v4-pro` on 2026-05-05, contaminating 86 of 91 declarative-golden sims and 87 of 92 imperative-golden sims with DeepSeek-Pro responses while the metadata still claimed Haiku. The clean rerun uses fresh save names (`declarative_v2_golden_haiku`, `imperative_v2_golden_haiku`) so tau2's auto-resume cannot reach the contaminated checkpoints. The numbers in the paper come from the clean rerun; the `_backup` dirs are preserved on disk as forensic evidence.
+
+### Running an experiment
+
 ```bash
-cd tau2-bench && uv run python ../scripts/run_experiment.py --config ../configs/generalizability.yaml
+# One-time setup
+make setup                                    # clones tau2-bench v1.0.0, installs deps
+
+# Add API keys to tau2-bench/.env as needed:
+#   ANTHROPIC_API_KEY    (Haiku conditions)
+#   DEEPSEEK_API_KEY     (DeepSeek conditions + user simulator on non-Haiku rows)
+#   GEMINI_API_KEY       (Flash-Lite conditions)
+#   DASHSCOPE_API_KEY    (Qwen3.5-Flash conditions)
+
+# Run one scaling-probe leg, e.g. Flash-Lite golden
+cd tau2-bench && uv run python ../scripts/run_experiment.py \
+    --config ../configs/scaling-flash-lite.yaml \
+    --wave-size 1
+
+# Clean Haiku-golden rerun
+cd tau2-bench && uv run python ../scripts/run_experiment.py \
+    --config ../configs/haiku-golden-rerun.yaml \
+    --wave-size 1
 ```
+
+`scripts/run_experiment.py` bakes in `--auto-resume`: rerunning the same command picks up evaluable sims already on disk and retries only the infrastructure-error rows.
+
+### Extracting the table numbers
+
+After all conditions in scope finish, generate the scaling-probe summary CSV:
+
+```bash
+python3 scripts/compute_scaling_summary.py
+# writes results/scaling_flashlite_qwen.csv
+```
+
+The raw per-sim records live in `tau2-bench/data/simulations/<condition>/results.json`. The summary script reduces each condition to mean Pass^1, DB-match, mean turns, mean tokens, and mean Cost/Task (from per-message `agent_cost`). The `CONDITIONS` list inside `scripts/compute_scaling_summary.py` controls which conditions get summarised.
+
+### Verifying that the configured model actually answered
+
+A run can silently swap models if `--agent-llm` is mis-passed during a resume (the Haiku contamination above is exactly this failure mode). The top-level `info.agent_info.llm` records what the run *should* have called; to confirm what was *actually* called, walk the per-message `raw_data.model` field:
+
+```python
+import json
+d = json.load(open('tau2-bench/data/simulations/<condition>/results.json'))
+for s in d['simulations']:
+    for m in s['messages']:
+        if m.get('role') == 'assistant' and m.get('raw_data'):
+            print(s['task_id'], m['raw_data'].get('model'))
+            break
+```
+
+If the printed model does not match the configured `agent_llm` for every task, the condition is contaminated and needs a clean rerun under a fresh save name.
+
+### Software pinning
+
+- Python 3.12 via [`uv`](https://docs.astral.sh/uv/)
+- `tau2-bench` v1.0.0 (cloned by `make setup`, gitignored)
+- `litellm` (transitive) for provider abstraction and cost tracking
+- `sentence-transformers` for the local MiniLM embedder
 
 ## Requirements
 
