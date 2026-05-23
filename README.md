@@ -70,12 +70,6 @@ configs/
 tau2-bench/                 # Cloned dependency (gitignored)
 ```
 
-## Models
-
-| Role | Model | Cost |
-|------|-------|------|
-| Agent LLM | Qwen3.5-Flash via DashScope | ~$0.10/$0.40 per M tokens |
-| User simulator | GPT-4o-mini | ~$5 total |
 
 ## Architecture
 
