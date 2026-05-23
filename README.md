@@ -167,4 +167,4 @@ If the printed model does not match the configured `agent_llm` for every task, t
 - Python ≥3.12, <3.14
 - [uv](https://docs.astral.sh/uv/) package manager
 - macOS or Linux
-- API keys: OpenAI (user simulator), DashScope (agent LLM)
+- API keys: OpenAI/DeepSeek (user simulators), DashScope (agent LLM), Gemini, Anthropic
